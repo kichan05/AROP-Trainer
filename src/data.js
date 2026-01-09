@@ -28,16 +28,16 @@ export const alphabetData = [
 ];
 
 export const numberData = [
-  { char: '0', name: 'Nadazero', pronunciation: '나다제로', tts: 'Zero' },
-  { char: '1', name: 'Unaone', pronunciation: '우나원', tts: 'One' },
-  { char: '2', name: 'Bissotwo', pronunciation: '비스투', tts: 'Two' },
-  { char: '3', name: 'Terrathree', pronunciation: '테라쓰리', tts: 'Tree' }, // 항공 발음 '트리'
-  { char: '4', name: 'Kartefour', pronunciation: '카테포', tts: 'Fower' }, // 항공 발음 '포-어'
-  { char: '5', name: 'Pantafive', pronunciation: '판타파이브', tts: 'Fife' }, // 항공 발음 '파이프'
-  { char: '6', name: 'Soxisix', pronunciation: '속시식스', tts: 'Six' },
-  { char: '7', name: 'Setteseven', pronunciation: '세테세븐', tts: 'Seven' },
-  { char: '8', name: 'Oktoeight', pronunciation: '옥토에이트', tts: 'Ait' },
-  { char: '9', name: 'Novenine', pronunciation: '노베나이너', tts: 'Niner' }, // 항공 발음 '나이너'
+  { char: '0', name: 'Nadazero', pronunciation: '나다제로', tts: 'Nadazero' },
+  { char: '1', name: 'Unaone', pronunciation: '우나원', tts: 'Unaone' },
+  { char: '2', name: 'Bissotwo', pronunciation: '비스투', tts: 'Bissotwo' },
+  { char: '3', name: 'Terrathree', pronunciation: '테라쓰리', tts: 'Terrathree' },
+  { char: '4', name: 'Kartefour', pronunciation: '카테포', tts: 'Kartefour' },
+  { char: '5', name: 'Pantafive', pronunciation: '판타파이브', tts: 'Pantafive' },
+  { char: '6', name: 'Soxisix', pronunciation: '속시식스', tts: 'Soxisix' },
+  { char: '7', name: 'Setteseven', pronunciation: '세테세븐', tts: 'Setteseven' },
+  { char: '8', name: 'Oktoeight', pronunciation: '옥토에이트', tts: 'Oktoeight' },
+  { char: '9', name: 'Novenine', pronunciation: '노베나이너', tts: 'Novenine' },
 ];
 
 export const sampleSentences = [
