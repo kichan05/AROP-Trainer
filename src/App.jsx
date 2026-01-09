@@ -345,6 +345,10 @@ function App() {
           )}
         </div>
       )}
+      <footer className="footer">
+        개발: <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer">Gemini-CLI</a>,
+        자연어입력 : <a href="https://kichan.dev" target="_blank" rel="noopener noreferrer">박희찬(kichan)</a>
+      </footer>
     </div>
   );
 }

@@ -428,3 +428,22 @@
   font-size: 0.9rem;
   color: #666;
 }
+
+.footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  color: #888;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.footer a {
+  color: #646cff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
