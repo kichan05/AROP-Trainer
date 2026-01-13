@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { alphabetData, numberData, sampleSentences } from './data';
+import { alphabetData, numberData, sampleSentences, standardWords, callSigns, aviationTerms, quizQuestions } from './data';
 
 // Fisher-Yates Shuffle
 const shuffleArray = (array) => {
@@ -22,9 +22,9 @@ const chunkArray = (array, size) => {
 };
 
 function App() {
-  const [view, setView] = useState('study'); // 'study' | 'stats' | 'table' | 'listening'
-  const [mode, setMode] = useState('alphabet'); // 'alphabet' | 'number'
-  const [tableMode, setTableMode] = useState('alphabet');
+  const [view, setView] = useState('study'); // 'study' | 'stats' | 'table' | 'listening' | 'quiz'
+  const [mode, setMode] = useState('alphabet'); // 'alphabet' | 'number' | 'standard' | 'callsign' | 'term'
+  const [tableMode, setTableMode] = useState('alphabet'); // 'alphabet' | 'number' | 'standard' | 'callsign' | 'term'
   
   const [cards, setCards] = useState(() => [...alphabetData]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -40,6 +40,16 @@ function App() {
   const [userAnswer, setUserAnswer] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [testResult, setTestResult] = useState(null);
+
+  // Quiz Mode State
+  const [quizState, setQuizState] = useState({
+    questions: [],
+    currentIndex: 0,
+    score: 0,
+    showResult: false,
+    selectedOption: null,
+    isCorrect: null
+  });
 
   // Initialize mistakes from LocalStorage
   const [mistakes, setMistakes] = useState(() => {
@@ -91,7 +101,15 @@ function App() {
 
   const handleTabChange = (newMode) => {
     setMode(newMode);
-    const newData = newMode === 'alphabet' ? [...alphabetData] : [...numberData];
+    let newData = [];
+    switch (newMode) {
+      case 'alphabet': newData = [...alphabetData]; break;
+      case 'number': newData = [...numberData]; break;
+      case 'standard': newData = [...standardWords]; break;
+      case 'callsign': newData = [...callSigns]; break;
+      case 'term': newData = [...aviationTerms]; break;
+      default: newData = [...alphabetData];
+    }
     setCards(newData);
     setCurrentIndex(0);
     setIsFlipped(false);
@@ -109,6 +127,50 @@ function App() {
     if (confirm('모든 오답 기록을 초기화하시겠습니까?')) {
       setMistakes({});
     }
+  };
+
+  // --- Quiz Logic ---
+  const startQuiz = () => {
+    setQuizState({
+      questions: shuffleArray([...quizQuestions]),
+      currentIndex: 0,
+      score: 0,
+      showResult: false,
+      selectedOption: null,
+      isCorrect: null
+    });
+    setView('quiz');
+  };
+
+  const handleQuizOptionClick = (option) => {
+    if (quizState.selectedOption) return; // Prevent double click
+
+    const currentQuestion = quizState.questions[quizState.currentIndex];
+    const isCorrect = option === currentQuestion.answer;
+    
+    setQuizState(prev => ({
+      ...prev,
+      selectedOption: option,
+      isCorrect: isCorrect,
+      score: isCorrect ? prev.score + 1 : prev.score
+    }));
+
+    // Auto next after delay
+    setTimeout(() => {
+      if (quizState.currentIndex < quizState.questions.length - 1) {
+        setQuizState(prev => ({
+          ...prev,
+          currentIndex: prev.currentIndex + 1,
+          selectedOption: null,
+          isCorrect: null
+        }));
+      } else {
+        setQuizState(prev => ({
+          ...prev,
+          showResult: true
+        }));
+      }
+    }, 1500);
   };
 
   // --- Listening Logic ---
@@ -149,9 +211,9 @@ function App() {
     }, 100);
 
     const ttsMap = {};
-    [...alphabetData, ...numberData].forEach(item => {
+    [...alphabetData, ...numberData, ...standardWords, ...callSigns, ...aviationTerms].forEach(item => {
       ttsMap[item.char.toUpperCase()] = item.tts;
-      ttsMap[item.name.toUpperCase()] = item.tts;
+      if (item.name) ttsMap[item.name.toUpperCase()] = item.tts;
     });
 
     if (listeningConfig.type === 'random') {
@@ -232,37 +294,62 @@ function App() {
   }, [currentIndex, cards, isFlipped, view, currentItem]);
 
   const getSortedMistakes = () => {
-    const allItems = [...alphabetData, ...numberData];
+    const allItems = [...alphabetData, ...numberData, ...standardWords, ...callSigns, ...aviationTerms];
     return allItems
       .map(item => ({ ...item, count: mistakes[item.char] || 0 }))
       .filter(item => item.count > 0)
       .sort((a, b) => b.count - a.count);
   };
 
-  const alphabetRows = chunkArray(alphabetData, 4);
-  const numberRows = chunkArray(numberData, 2);
+  const getDataForTable = () => {
+    switch (tableMode) {
+      case 'alphabet': return chunkArray(alphabetData, 4);
+      case 'number': return chunkArray(numberData, 2);
+      case 'standard': return chunkArray(standardWords, 1);
+      case 'callsign': return chunkArray(callSigns, 1);
+      case 'term': return chunkArray(aviationTerms, 1);
+      default: return [];
+    }
+  };
+
+  const tableRows = getDataForTable();
 
   return (
     <div className="container">
-      <h1>항공 무선 통신사 문자 암기</h1>
+      <h1>항공 무선 통신사 학습</h1>
       
       <div className="tabs">
-        <button className={`tab-btn ${mode === 'alphabet' && view === 'study' ? 'active' : ''}`} onClick={() => handleTabChange('alphabet')}>문자 학습</button>
-        <button className={`tab-btn ${mode === 'number' && view === 'study' ? 'active' : ''}`} onClick={() => handleTabChange('number')}>숫자 학습</button>
-        <button className={`tab-btn ${view === 'listening' ? 'active' : ''}`} onClick={() => setView('listening')} style={{ marginLeft: '10px', backgroundColor: '#9c27b0', color: 'white' }}>🎧 듣기 연습</button>
-        <button className={`tab-btn ${view === 'stats' ? 'active' : ''}`} onClick={() => setView('stats')} style={{ marginLeft: '10px', backgroundColor: '#e91e63', color: 'white' }}>📊 오답 통계</button>
-        <button className={`tab-btn ${view === 'table' ? 'active' : ''}`} onClick={() => setView('table')} style={{ marginLeft: '10px', backgroundColor: '#2196f3', color: 'white' }}>📑 전체 표</button>
+        <button className={`tab-btn ${mode === 'alphabet' && view === 'study' ? 'active' : ''}`} onClick={() => handleTabChange('alphabet')}>문자</button>
+        <button className={`tab-btn ${mode === 'number' && view === 'study' ? 'active' : ''}`} onClick={() => handleTabChange('number')}>숫자</button>
+        <button className={`tab-btn ${mode === 'standard' && view === 'study' ? 'active' : ''}`} onClick={() => handleTabChange('standard')}>표준단어</button>
+        <button className={`tab-btn ${mode === 'callsign' && view === 'study' ? 'active' : ''}`} onClick={() => handleTabChange('callsign')}>호출부호</button>
+        <button className={`tab-btn ${mode === 'term' && view === 'study' ? 'active' : ''}`} onClick={() => handleTabChange('term')}>항공용어</button>
+      </div>
+      <div className="tabs secondary-tabs">
+        <button className={`tab-btn ${view === 'quiz' ? 'active' : ''}`} onClick={startQuiz} style={{ backgroundColor: '#ff9800', color: 'white' }}>📝 퀴즈</button>
+        <button className={`tab-btn ${view === 'listening' ? 'active' : ''}`} onClick={() => setView('listening')} style={{ backgroundColor: '#9c27b0', color: 'white' }}>🎧 듣기 연습</button>
+        <button className={`tab-btn ${view === 'stats' ? 'active' : ''}`} onClick={() => setView('stats')} style={{ backgroundColor: '#e91e63', color: 'white' }}>📊 오답 통계</button>
+        <button className={`tab-btn ${view === 'table' ? 'active' : ''}`} onClick={() => setView('table')} style={{ backgroundColor: '#2196f3', color: 'white' }}>📑 전체 표</button>
       </div>
 
       {view === 'study' ? (
         <>
-          <div className="toolbar" style={{ marginBottom: '10px' }}><button className="small-btn" onClick={handleShuffle}>🔀 순서 섞기</button></div>
+          <div className="toolbar" style={{ marginBottom: '10px' }}>
+            <button className="small-btn" onClick={handleShuffle}>🔀 순서 섞기</button>
+          </div>
           <div className="flashcard-container" onClick={handleCardClick}>
             {currentItem ? (
               <div className={`flashcard ${isFlipped ? 'flipped' : ''}`}>
-                <div className="card-face card-front"><div className="char-display">{currentItem.char}</div><p className="hint">클릭해서 정답 확인</p></div>
+                <div className="card-face card-front">
+                  <div className="char-display" style={{fontSize: (mode === 'callsign' ? currentItem.name : currentItem.char).length > 8 ? '2rem' : '4rem'}}>
+                    {mode === 'callsign' ? currentItem.name : currentItem.char}
+                  </div>
+                  <p className="hint">클릭해서 정답 확인</p>
+                </div>
                 <div className="card-face card-back">
-                  <div className="name-display">{currentItem.name}</div>
+                  <div className="name-display">
+                    {mode === 'callsign' ? currentItem.char : currentItem.name}
+                  </div>
                   <div className="pronunciation-display">{currentItem.pronunciation}</div>
                   <div className="grading-buttons">
                     <button className="grade-btn wrong" onClick={(e) => { e.stopPropagation(); handleGrade('wrong'); }}>❌ 틀렸음</button>
@@ -270,7 +357,7 @@ function App() {
                   </div>
                 </div>
               </div>
-            ) : <div className="flashcard"><div className="card-face"><p>Loading...</p></div></div>}
+            ) : <div className="flashcard"><div className="card-face"><p>카드가 없습니다.</p></div></div>}
           </div>
           <div className="controls">
             <button className="control-btn" onClick={handlePrev} disabled={!cards.length}>←</button>
@@ -278,6 +365,44 @@ function App() {
             <button className="control-btn" onClick={handleNext} disabled={!cards.length}>→</button>
           </div>
         </>
+      ) : view === 'quiz' ? (
+        <div className="quiz-container">
+           {quizState.showResult ? (
+             <div className="quiz-result">
+               <h2>퀴즈 결과</h2>
+               <div className="score-display">
+                 {quizState.score} / {quizState.questions.length}
+               </div>
+               <p>{quizState.score >= quizState.questions.length * 0.8 ? '🎉 훌륭합니다!' : '💪 더 노력해보세요!'}</p>
+               <button className="reset-btn" onClick={startQuiz}>다시 풀기</button>
+             </div>
+           ) : (
+             <div className="quiz-question-box">
+               <div className="quiz-progress">문제 {quizState.currentIndex + 1} / {quizState.questions.length}</div>
+               <h3 className="quiz-question">{quizState.questions[quizState.currentIndex]?.question}</h3>
+               <div className="quiz-options">
+                 {quizState.questions[quizState.currentIndex]?.options.map((option, idx) => (
+                   <button 
+                    key={idx} 
+                    className={`quiz-option-btn 
+                      ${quizState.selectedOption === option ? (quizState.isCorrect ? 'correct' : 'wrong') : ''}
+                      ${quizState.selectedOption && option === quizState.questions[quizState.currentIndex].answer ? 'correct' : ''}
+                    `}
+                    onClick={() => handleQuizOptionClick(option)}
+                    disabled={!!quizState.selectedOption}
+                   >
+                     {option}
+                   </button>
+                 ))}
+               </div>
+               {quizState.selectedOption && (
+                 <div className="quiz-feedback">
+                   {quizState.isCorrect ? '⭕ 정답입니다!' : `❌ 오답입니다. 정답: ${quizState.questions[quizState.currentIndex].answer}`}
+                 </div>
+               )}
+             </div>
+           )}
+        </div>
       ) : view === 'listening' ? (
         <div className="listening-container">
           <h2>🎧 수신(듣기) 평가 연습</h2>
@@ -334,15 +459,27 @@ function App() {
         </div>
       ) : (
         <div className="table-view-container">
-          <div className="tabs" style={{ marginBottom: '20px', justifyContent: 'center' }}>
+          <div className="tabs" style={{ marginBottom: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className={`tab-btn ${tableMode === 'alphabet' ? 'active' : ''}`} onClick={() => setTableMode('alphabet')}>문자</button>
             <button className={`tab-btn ${tableMode === 'number' ? 'active' : ''}`} onClick={() => setTableMode('number')}>숫자</button>
+            <button className={`tab-btn ${tableMode === 'standard' ? 'active' : ''}`} onClick={() => setTableMode('standard')}>표준단어</button>
+            <button className={`tab-btn ${tableMode === 'callsign' ? 'active' : ''}`} onClick={() => setTableMode('callsign')}>호출부호</button>
+            <button className={`tab-btn ${tableMode === 'term' ? 'active' : ''}`} onClick={() => setTableMode('term')}>항공용어</button>
           </div>
-          {tableMode === 'alphabet' ? (
-            <div className="table-section"><h2>🔤 문자</h2><table className="reference-table multi-column"><tbody>{alphabetRows.map((row, i) => (<tr key={i}>{row.map((item) => (<React.Fragment key={item.char}><td className="cell-char">{item.char}</td><td className="cell-name">{item.name} ({item.pronunciation})</td></React.Fragment>))}</tr>))}</tbody></table></div>
-          ) : (
-            <div className="table-section"><h2>🔢 숫자</h2><table className="reference-table multi-column"><tbody>{numberRows.map((row, i) => (<tr key={i}>{row.map((item) => (<React.Fragment key={item.char}><td className="cell-char">{item.char}</td><td className="cell-name">{item.name} ({item.pronunciation})</td></React.Fragment>))}</tr>))}</tbody></table></div>
-          )}
+          <div className="table-section">
+             <table className="reference-table multi-column">
+              <tbody>
+                {tableRows.map((row, i) => (
+                  <tr key={i}>{row.map((item) => (
+                    <React.Fragment key={item.char}>
+                      <td className="cell-char" style={{maxWidth: '150px'}}>{item.char}</td>
+                      <td className="cell-name">{item.name} <br/><small>{item.pronunciation}</small></td>
+                    </React.Fragment>
+                  ))}</tr>
+                ))}
+              </tbody>
+             </table>
+          </div>
         </div>
       )}
       <footer className="footer">
